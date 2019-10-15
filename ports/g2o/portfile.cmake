@@ -10,6 +10,19 @@ vcpkg_from_github(
 
 string(COMPARE EQUAL "${VCPKG_LIBRARY_LINKAGE}" "dynamic" BUILD_LGPL_SHARED_LIBS)
 
+if (VCPKG_TRIPLET_TARGET STREQUAL "jetsontx2")
+set(ADDITIONAL_OPTIONS
+    -DDO_SSE_AUTODETECT:BOOL=OFF
+    -DDISABLE_SSE2:BOOL=ON
+    -DDISABLE_SSE3:BOOL=ON
+    -DDISABLE_SSE4_1:BOOL=ON
+    -DDISABLE_SSE4_2:BOOL=ON
+    -DDISABLE_SSE4_A:BOOL=ON
+    )
+else()
+set(ADDITIONAL_OPTIONS "")
+endif()
+
 vcpkg_configure_cmake(
     SOURCE_PATH ${SOURCE_PATH}
     PREFER_NINJA
@@ -17,6 +30,7 @@ vcpkg_configure_cmake(
         -DBUILD_LGPL_SHARED_LIBS=${BUILD_LGPL_SHARED_LIBS}
         -DG2O_BUILD_EXAMPLES=OFF
         -DG2O_BUILD_APPS=OFF
+        ${ADDITIONAL_OPTIONS}
 )
 
 vcpkg_install_cmake()
