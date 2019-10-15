@@ -17,12 +17,27 @@ vcpkg_download_distfile(ARCHIVE
     FILENAME "fbow-1.0.0.zip"
     SHA512 e8c23ed554ddb9c5fca62d4aaa65f55f760b793659c1e39a4a8776daf89a48189693864f93b257e1ab17b50a7a6c1470a1ca42670c588f85383e5bf15e2df02d
 )
-vcpkg_extract_source_archive(${ARCHIVE})
+vcpkg_extract_source_archive_ex(
+    OUT_SOURCE_PATH SOURCE_PATH    
+    ARCHIVE ${ARCHIVE}
+    PATCHES 
+        "added_use_intrin_option.patch")
+
+set(CMAKE_SYSTEM_PROCESSOR ${VCPKG_TARGET_ARCHITECTURE})
+
+if (${TARGET_TRIPLET} STREQUAL "arm64-jetsontx2")
+    set(USE_AVX "-DUSE_AVX=OFF")
+    set(USE_SSE3 "-DUSE_SSE3=OFF")
+    set(USE_INTRIN "-DUSE_INTRIN=OFF")
+else()
+    set(USE_AVX "-DUSE_AVX=ON")
+    set(USE_SSE3 "-DUSE_SSE3=ON")
+    set(USE_INTRIN "-DUSE_INTRIN=ON")
+endif()
 
 vcpkg_configure_cmake(
     SOURCE_PATH ${SOURCE_PATH}
-    PREFER_NINJA # Disable this option if project cannot be built with Ninja
-    OPTIONS -DBUILD_UTILS=OFF
+    OPTIONS -DBUILD_UTILS=OFF ${USE_AVX} ${USE_SSE3} ${USE_INTRIN}
     # OPTIONS -DUSE_THIS_IN_ALL_BUILDS=1 -DUSE_THIS_TOO=2
     # OPTIONS_RELEASE -DOPTIMIZE=1
     # OPTIONS_DEBUG -DDEBUGGABLE=1

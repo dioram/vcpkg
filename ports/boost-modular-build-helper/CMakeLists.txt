@@ -129,6 +129,12 @@ if(NOT NUMBER_OF_PROCESSORS)
     set(NUMBER_OF_PROCESSORS 1)
 endif()
 
+if(VCPKG_TARGET_ARCHITECTURE STREQUAL "arm64" OR VCPKG_TARGET_ARCHITECTURE STREQUAL "arm")
+set (ARCHITECTURE "arm")
+else()
+set (ARCHITECTURE "x86")
+endif()
+
 add_custom_target(boost ALL
     COMMAND "${B2_EXE}"
         --user-config=${CMAKE_CURRENT_BINARY_DIR}/user-config.jam
@@ -154,7 +160,7 @@ add_custom_target(boost ALL
         --hash
         -q
 
-        architecture=x86
+        architecture=${ARCHITECTURE} # TODO: make smart choice of x86/arm
         threading=multi
         threadapi=pthread
         debug-symbols=on

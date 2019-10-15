@@ -8,7 +8,7 @@ function(boost_modular_build)
     # Todo: this serves too similar a purpose as vcpkg_find_acquire_program()
     if(CMAKE_HOST_WIN32 AND VCPKG_CMAKE_SYSTEM_NAME AND NOT VCPKG_CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
         get_filename_component(BOOST_BUILD_PATH "${CURRENT_INSTALLED_DIR}/../x86-windows/tools/boost-build" ABSOLUTE)
-    elseif(NOT VCPKG_TARGET_ARCHITECTURE STREQUAL "x64" AND NOT VCPKG_TARGET_ARCHITECTURE STREQUAL "x86")
+    elseif(NOT VCPKG_TARGET_ARCHITECTURE STREQUAL "x64" AND NOT VCPKG_TARGET_ARCHITECTURE STREQUAL "x86" AND NOT VCPKG_TARGET_ARCHITECTURE STREQUAL "arm64")
         get_filename_component(BOOST_BUILD_PATH "${CURRENT_INSTALLED_DIR}/../x86-windows/tools/boost-build" ABSOLUTE)
     else()
         set(BOOST_BUILD_PATH "${CURRENT_INSTALLED_DIR}/tools/boost-build")
@@ -29,7 +29,7 @@ function(boost_modular_build)
     if(VCPKG_CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
         list(APPEND _bm_OPTIONS windows-api=store)
     endif()
-
+    
     set(_bm_DIR ${CURRENT_INSTALLED_DIR}/share/boost-build)
 
     set(REQUIREMENTS ${_bm_REQUIREMENTS})
@@ -171,7 +171,6 @@ function(boost_modular_build)
          -sBZIP2_BINARY=bz2
          "-sBZIP2_LIBPATH=${CURRENT_INSTALLED_DIR}/lib"
     )
-
     # Properly handle compiler and linker flags passed by VCPKG
     if(VCPKG_CXX_FLAGS)
         list(APPEND _bm_OPTIONS "cxxflags=${VCPKG_CXX_FLAGS}")
