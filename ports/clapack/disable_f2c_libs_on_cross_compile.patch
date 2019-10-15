@@ -1,0 +1,15 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index db58b4e..8b3759f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -16,7 +16,9 @@ if(NOT USE_BLAS_WRAP)
+   add_definitions(-DNO_BLAS_WRAP)
+ endif()
+ include_directories(${CLAPACK_SOURCE_DIR}/INCLUDE)
+-add_subdirectory(F2CLIBS)
++if(NOT CMAKE_CROSSCOMPILING)
++  add_subdirectory(F2CLIBS)
++endif()
+ add_subdirectory(SRC)
+ set(CLAPACK_VERSION 3.2.1)
+ install(EXPORT clapack-targets FILE clapack-targets.cmake DESTINATION share/clapack)

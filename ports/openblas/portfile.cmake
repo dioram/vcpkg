@@ -71,11 +71,13 @@ elseif(NOT VCPKG_CMAKE_SYSTEM_NAME)
 else()
     list(APPEND VCPKG_C_FLAGS "-DNEEDBUNDERSCORE") # Required to get common BLASFUNC to append extra _
     list(APPEND VCPKG_CXX_FLAGS "-DNEEDBUNDERSCORE")
+    if (VCPKG_TRIPLET_TARGET STREQUAL "jetsontx2")
+        set(COMMON_OPTIONS "${COMMON_OPTIONS} -DTARGET=CORTEXA57")
+    endif()
     vcpkg_configure_cmake(
         SOURCE_PATH ${SOURCE_PATH}
         OPTIONS
             ${COMMON_OPTIONS}
-            -DCMAKE_SYSTEM_PROCESSOR=AMD64
             -DNOFORTRAN=ON
             -DBU=_  #required for all blas functions to append extra _ using NAME
             )

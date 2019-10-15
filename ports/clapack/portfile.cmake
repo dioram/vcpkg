@@ -13,8 +13,9 @@ vcpkg_extract_source_archive_ex(
   ARCHIVE ${ARCHIVE}
   PATCHES
       remove_internal_blas.patch
-	  fix-ConfigFile.patch
+	    fix-ConfigFile.patch
       fix-install.patch
+      disable_f2c_libs_on_cross_compile.patch
 )
 
 vcpkg_configure_cmake(
