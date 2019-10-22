@@ -21,7 +21,9 @@ vcpkg_extract_source_archive_ex(
     OUT_SOURCE_PATH SOURCE_PATH    
     ARCHIVE ${ARCHIVE}
     PATCHES 
-        "added_use_intrin_option.patch")
+        "added_use_intrin_option.patch"
+	"cmakelists_installation_fix.patch"
+)
 
 set(CMAKE_SYSTEM_PROCESSOR ${VCPKG_TARGET_ARCHITECTURE})
 
@@ -38,23 +40,10 @@ endif()
 vcpkg_configure_cmake(
     SOURCE_PATH ${SOURCE_PATH}
     OPTIONS -DBUILD_UTILS=OFF ${USE_AVX} ${USE_SSE3} ${USE_INTRIN}
-    # OPTIONS -DUSE_THIS_IN_ALL_BUILDS=1 -DUSE_THIS_TOO=2
-    # OPTIONS_RELEASE -DOPTIMIZE=1
-    # OPTIONS_DEBUG -DDEBUGGABLE=1
 )
 
 vcpkg_install_cmake()
-
-file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/include)
-file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/share)
-# file(COPY ${CURRENT_PACKAGES_DIR}/lib/cmake DESTINATION ${CURRENT_PACKAGES_DIR}/share)
-# file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/lib/cmake)
-# file(RENAME ${CURRENT_PACKAGES_DIR}/share/cmake ${CURRENT_PACKAGES_DIR}/share/fbow)
+vcpkg_fixup_cmake_targets(CONFIG_PATH "lib/cmake/fbow")
 
 configure_file(${CURRENT_PORT_DIR}/copyright.in ${CURRENT_PACKAGES_DIR}/share/fbow/copyright)
-
-# Handle copyright
-# file(INSTALL ${SOURCE_PATH}/LICENSE DESTINATION ${CURRENT_PACKAGES_DIR}/share/fbow RENAME copyright)
-
-# Post-build test for cmake libraries
-# vcpkg_test_cmake(PACKAGE_NAME fbow)
+file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/include)
