@@ -1,0 +1,283 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index f11098a..dbdf421 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -3,7 +3,7 @@
+ # ----------------------------------------------------------------------------
+ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+ 
+-PROJECT(fbow)
++PROJECT(fbow_solution)
+ set(PROJECT_VERSION "0.0.1")
+ string(REGEX MATCHALL "[0-9]" PROJECT_VERSION_PARTS "${PROJECT_VERSION}")
+ list(GET PROJECT_VERSION_PARTS 0 PROJECT_VERSION_MAJOR)
+@@ -79,22 +79,6 @@ IF (INSTALL_DOC)
+     GENERATE_DOCUMENTATION(${PROJECT_SOURCE_DIR}/dox.in)
+ ENDIF()
+  
+-# ----------------------------------------------------------------------------
+-#   Uninstall target, for "make uninstall"
+-# ----------------------------------------------------------------------------
+-CONFIGURE_FILE( "${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in" "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake" IMMEDIATE @ONLY)
+-ADD_CUSTOM_TARGET(uninstall "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
+-
+-# ----------------------------------------------------------------------------
+-# create configuration file from .in file (If you use windows take care with paths)
+-# ----------------------------------------------------------------------------
+-
+-CONFIGURE_FILE("${PROJECT_SOURCE_DIR}/config.cmake.in" "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake")
+-INSTALL(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake" DESTINATION share/${PROJECT_NAME}/ )
+-
+-
+-
+-
+ # ----------------------------------------------------------------------------
+ #   Program Optimization and debug (Extracted from OpenCV)
+ # ----------------------------------------------------------------------------
+diff --git a/cmake_uninstall.cmake.in b/cmake_uninstall.cmake.in
+deleted file mode 100644
+index 81482da..0000000
+--- a/cmake_uninstall.cmake.in
++++ /dev/null
+@@ -1,28 +0,0 @@
+-# -----------------------------------------------
+-# File that provides "make uninstall" target
+-#  We use the file 'install_manifest.txt'
+-# -----------------------------------------------
+-IF(NOT EXISTS "@CMAKE_CURRENT_BINARY_DIR@/install_manifest.txt")
+-  MESSAGE(FATAL_ERROR "Cannot find install manifest: \"@CMAKE_CURRENT_BINARY_DIR@/install_manifest.txt\"")
+-ENDIF(NOT EXISTS "@CMAKE_CURRENT_BINARY_DIR@/install_manifest.txt")
+-
+-FILE(READ "@CMAKE_CURRENT_BINARY_DIR@/install_manifest.txt" files)
+-STRING(REGEX REPLACE "\n" ";" files "${files}")
+-FOREACH(file ${files})
+-  MESSAGE(STATUS "Uninstalling \"$ENV{DESTDIR}${file}\"")
+-#  IF(EXISTS "$ENV{DESTDIR}${file}")
+-#    EXEC_PROGRAM(
+-#      "@CMAKE_COMMAND@" ARGS "-E remove \"$ENV{DESTDIR}${file}\""
+-#      OUTPUT_VARIABLE rm_out
+-#      RETURN_VALUE rm_retval
+-#      )
+-	EXECUTE_PROCESS(COMMAND rm $ENV{DESTDIR}${file})
+-#    IF(NOT "${rm_retval}" STREQUAL 0)
+-#      MESSAGE(FATAL_ERROR "Problem when removing \"$ENV{DESTDIR}${file}\"")
+-#    ENDIF(NOT "${rm_retval}" STREQUAL 0)
+-#  ELSE(EXISTS "$ENV{DESTDIR}${file}")
+-#    MESSAGE(STATUS "File \"$ENV{DESTDIR}${file}\" does not exist.")
+-#  ENDIF(EXISTS "$ENV{DESTDIR}${file}")
+-ENDFOREACH(file)
+-
+-
+diff --git a/config.cmake.in b/config.cmake.in
+deleted file mode 100644
+index 0a2e24d..0000000
+--- a/config.cmake.in
++++ /dev/null
+@@ -1,35 +0,0 @@
+-# ===================================================================================
+-#  @PROJECT_NAME@ CMake configuration file
+-#
+-#             ** File generated automatically, do not modify **
+-#
+-#  Usage from an external project:
+-#    In your CMakeLists.txt, add these lines:
+-#
+-#    FIND_PACKAGE(@PROJECT_NAME@ REQUIRED )
+-#    TARGET_LINK_LIBRARIES(MY_TARGET_NAME ${@PROJECT_NAME@_LIBS})
+-#
+-#    This file will define the following variables:
+-#      - @PROJECT_NAME@_LIBS          : The list of libraries to links against.
+-#      - @PROJECT_NAME@_LIB_DIR       : The directory where lib files are. Calling LINK_DIRECTORIES
+-#                                with this path is NOT needed.
+-#      - @PROJECT_NAME@_VERSION       : The  version of this PROJECT_NAME build. Example: "1.2.0"
+-#      - @PROJECT_NAME@_VERSION_MAJOR : Major version part of VERSION. Example: "1"
+-#      - @PROJECT_NAME@_VERSION_MINOR : Minor version part of VERSION. Example: "2"
+-#      - @PROJECT_NAME@_VERSION_PATCH : Patch version part of VERSION. Example: "0"
+-#
+-# ===================================================================================
+-INCLUDE_DIRECTORIES("@CMAKE_INSTALL_PREFIX@/include")
+-SET(@PROJECT_NAME@_INCLUDE_DIRS "@CMAKE_INSTALL_PREFIX@/include")
+-
+-LINK_DIRECTORIES("@CMAKE_INSTALL_PREFIX@/lib")
+-SET(@PROJECT_NAME@_LIB_DIR "@CMAKE_INSTALL_PREFIX@/lib")
+-
+-SET(@PROJECT_NAME@_LIBS @REQUIRED_LIBRARIES@ @PROJECT_NAME@@PROJECT_DLLVERSION@) 
+-
+-SET(@PROJECT_NAME@_FOUND YES)
+-SET(@PROJECT_NAME@_FOUND "YES")
+-SET(@PROJECT_NAME@_VERSION        @PROJECT_VERSION@)
+-SET(@PROJECT_NAME@_VERSION_MAJOR  @PROJECT_VERSION_MAJOR@)
+-SET(@PROJECT_NAME@_VERSION_MINOR  @PROJECT_VERSION_MINOR@)
+-SET(@PROJECT_NAME@_VERSION_PATCH  @PROJECT_VERSION_PATCH@)
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 783e62a..9f2b3ea 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -1,75 +1,76 @@
+-ADD_DEFINITIONS(-DNOMINMAX)
++project(fbow CXX)
++cmake_minimum_required(VERSION 3.5)
+ 
+-SET(  srcs  fbow.cpp  vocabulary_creator.cpp )
+-SET(  hdrs  fbow.h fbow_exports.h vocabulary_creator.h cpu.h)
++set(PROJECT_VERSION_MAJOR 1)
++set(PROJECT_VERSION_MINOR 0)
++set(PROJECT_VERSION_PATCH 0)
+ 
++set (PROJECT_VERSION ${PROJECT_VERSION_MAJOR} ${PROJECT_VERSION_MINOR} ${PROJECT_VERSION_PATCH})
+ 
+-SET(THIS_LIBNAME fbow)
++set(srcs fbow.cpp vocabulary_creator.cpp )
++set(hdrs fbow.h fbow_exports.h vocabulary_creator.h cpu.h)
+ 
+-ADD_LIBRARY(${THIS_LIBNAME} ${srcs} ${hdrs})
++set(THIS_LIBNAME fbow)
+ 
+-SET_TARGET_PROPERTIES(${THIS_LIBNAME} PROPERTIES 				# create *nix style library versions + symbolic links
++add_library(${THIS_LIBNAME} ${srcs} ${hdrs})
++
++add_definitions(-DNOMINMAX)
++
++set_target_properties(${THIS_LIBNAME} PROPERTIES 				# create *nix style library versions + symbolic links
+         DEFINE_SYMBOL FBOW_DSO_EXPORTS
+         VERSION ${PROJECT_VERSION}
+         SOVERSION ${PROJECT_SOVERSION}
+         CLEAN_DIRECT_OUTPUT 1 					# allow creating static and shared libs without conflicts
+         OUTPUT_NAME "${THIS_LIBNAME}${PROJECT_DLLVERSION}" 	# avoid conflicts between library and binary target names
+ )
+-TARGET_LINK_LIBRARIES(${THIS_LIBNAME} ${REQUIRED_LIBRARIES} )
+-
+-INSTALL(TARGETS ${THIS_LIBNAME}
+-        RUNTIME DESTINATION bin COMPONENT main			# Install the dll file in bin directory
+-        LIBRARY DESTINATION lib PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE COMPONENT main
+-        ARCHIVE DESTINATION lib COMPONENT main)			# Install the dll.a file in lib directory
+-
+-
+-
+-
+-    INSTALL(FILES ${hdrs}
+-            DESTINATION include/fbow
+-            COMPONENT main)
+-
+-
+-
+-#set(sources
+-#    fbow.cpp
+-#    vocabulary_creator.cpp
+-#)
+-
+-#set(headers
+-#    fbow.h
+-#   fbow_exports.h
+-#    vocabulary_creator.h
+-#)
+-
+-#add_library(fbow ${sources} ${headers})
++target_link_libraries(${THIS_LIBNAME} ${REQUIRED_LIBRARIES})
++target_include_directories(${THIS_LIBNAME}
++        PUBLIC
++            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
++            $<INSTALL_INTERFACE:include/fbow>
++)
+ 
+-#set_target_properties(fbow PROPERTIES          # create *nix style library versions + symbolic links
+-#    DEFINE_SYMBOL FBOW_DSO_EXPORTS
+-#    VERSION ${PROJECT_VERSION}
+-#    SOVERSION ${PROJECT_SOVERSION}
+-#    CXX_VISIBILITY_PRESET hidden                # Make all the symbols hidden, so we have to explicitly define an API
+-#    CLEAN_DIRECT_OUTPUT 1                       # allow creating static and shared libs without conflicts
+-#    OUTPUT_NAME "fbow${PROJECT_DLLVERSION}"    # avoid conflicts between library and binary target names
+-#)
++install(TARGETS ${THIS_LIBNAME}
++        EXPORT fbow-export
++        RUNTIME DESTINATION bin
++        LIBRARY DESTINATION lib
++        ARCHIVE DESTINATION lib
++)
+ 
+-#include(GenerateExportHeader)
+-#generate_export_header(fbow)
++install(
++        EXPORT fbow-export
++        FILE fbowTargets.cmake
++        NAMESPACE fbow::
++        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/fbow
++)
+ 
+-#target_link_libraries(fbow PUBLIC opencv_core)
+-#target_link_libraries(fbow PRIVATE opencv_features2d)
++install(FILES ${hdrs}
++    DESTINATION include/fbow
++)
+ 
+-#target_include_directories(fbow PUBLIC
+-#  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+-#  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+-#  $<INSTALL_INTERFACE:include>
+-#)
++set(FBOW_VERSION 1.0.0)
+ 
+-#install(TARGETS fbow EXPORT fbowConfig
+-#    RUNTIME DESTINATION bin
+-#    LIBRARY DESTINATION lib PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
+-#    ARCHIVE DESTINATION lib
+-#)
++include(CMakePackageConfigHelpers)
++configure_package_config_file(
++        config.cmake.in
++        ${CMAKE_CURRENT_BINARY_DIR}/fbowConfig.cmake
++        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/fbow
++        PATH_VARS PROJECT_VERSION
++)
++write_basic_package_version_file(
++        ${CMAKE_CURRENT_BINARY_DIR}/fbowConfigVersion.cmake
++        VERSION PROJECT_VERSION
++        COMPATIBILITY SameMajorVersion
++)
+ 
++install(
++    FILES
++        ${CMAKE_CURRENT_BINARY_DIR}/fbowConfig.cmake
++        ${CMAKE_CURRENT_BINARY_DIR}/fbowConfigVersion.cmake
++    DESTINATION
++        ${CMAKE_INSTALL_LIBDIR}/cmake/fbow
++)
+ 
+-#install(EXPORT arucoConfig DESTINATION "share/aruco/cmake")
++find_package(OpenCV REQUIRED)
++include_directories(${OpenCV_INCLUDE_DIRS})
++target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBRARIES})
+\ No newline at end of file
+diff --git a/tests/CMakeLists.txt b/tests/CMakeLists.txt
+index 96653b0..22692a3 100644
+--- a/tests/CMakeLists.txt
++++ b/tests/CMakeLists.txt
+@@ -1,6 +1,6 @@
+ # CMake file for sba's demo program
+ INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src )
+-LINK_LIBRARIES(${PROJECT_NAME})
++LINK_LIBRARIES(fbow::fbow)
+  
+ 
+ ADD_EXECUTABLE(fbow_test_dbow2VSfbow test_dbow2VSfbow.cpp dbow2/ScoringObject.cpp dbow2/BowVector.h  dbow2/FClass.h  dbow2/FeatureVector.h   dbow2/FORB.h  dbow2/ScoringObject.h  dbow2/TemplatedVocabulary.h )
+diff --git a/utils/CMakeLists.txt b/utils/CMakeLists.txt
+index 82bed12..1cce374 100644
+--- a/utils/CMakeLists.txt
++++ b/utils/CMakeLists.txt
+@@ -1,6 +1,6 @@
+ # CMake file for sba's demo program
+ INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src /home/mjmarin/libs/ORB_SLAM2/include)
+-LINK_LIBRARIES(${PROJECT_NAME})
++LINK_LIBRARIES(fbow::fbow)
+ 
+ ADD_EXECUTABLE(fbow_create_voc_step0 fbow_create_voc_step0.cpp dirreader.h)
+ ADD_EXECUTABLE(fbow_create_voc_step0_list fbow_create_voc_step0_list.cpp)
+diff --git a/src/config.cmake.in b/src/config.cmake.in
+new file mode 100644
+index 0000000..cb4516d
+--- /dev/null
++++ b/src/config.cmake.in
+@@ -0,0 +1,3 @@
++set(FBOW_VERSION @FBOW_VERSION@)
++
++include(${CMAKE_CURRENT_LIST_DIR}/fbowTargets.cmake)
