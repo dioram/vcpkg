@@ -1,3 +1,16 @@
+diff --git a/lib/config.cmake.in b/lib/config.cmake.in
+new file mode 100644
+index 0000000..eab9c83
+--- /dev/null
++++ b/lib/config.cmake.in
+@@ -0,0 +1,7 @@
++set(GAINPUT_VERSION @GAINPUT_VERSION@)
++
++@PACKAGE_INIT@
++
++include(${CMAKE_CURRENT_LIST_DIR}/gainputTargets.cmake)
++
++check_required_components(gainput)
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 index a443b66..c18d71a 100644
 --- a/CMakeLists.txt
@@ -17,10 +30,10 @@ index a443b66..c18d71a 100644
  	endif()
  endif()
 diff --git a/lib/CMakeLists.txt b/lib/CMakeLists.txt
-index 14d5e85..9a05e9d 100644
+index 14d5e85..3737fab 100644
 --- a/lib/CMakeLists.txt
 +++ b/lib/CMakeLists.txt
-@@ -27,11 +27,9 @@ if (GAINPUT_BUILD_SHARED)
+@@ -27,14 +27,12 @@ if (GAINPUT_BUILD_SHARED)
      FOLDER gainput
    )
    set(install_libs ${install_libs} gainput)
@@ -33,7 +46,11 @@ index 14d5e85..9a05e9d 100644
 +  add_library(gainput STATIC ${sources} ${mmsources})
    set_target_properties(gainputstatic PROPERTIES DEBUG_POSTFIX -d FOLDER gainput)
    set(install_libs ${install_libs} gainputstatic)
- endif (GAINPUT_BUILD_STATIC)
+-endif (GAINPUT_BUILD_STATIC)
++endif ()
+ 
+ if(WIN32)
+ 	target_link_libraries(gainput ${XINPUT} ws2_32)
 @@ -73,7 +71,36 @@ install(
  
  install(
@@ -60,7 +77,7 @@ index 14d5e85..9a05e9d 100644
 +)
 +write_basic_package_version_file(
 +        ${CMAKE_CURRENT_BINARY_DIR}/gainputConfigVersion.cmake
-+        VERSION PROJECT_VERSION
++        VERSION GAINPUT_VERSION
 +        COMPATIBILITY SameMajorVersion
 +)
 +
@@ -71,18 +88,16 @@ index 14d5e85..9a05e9d 100644
 +        DESTINATION
 +        ${CMAKE_INSTALL_LIBDIR}/cmake/gainput
 +)
-\ No newline at end of file
 diff --git a/lib/config.cmake.in b/lib/config.cmake.in
 new file mode 100644
-index 0000000..af564d7
+index 0000000..eab9c83
 --- /dev/null
 +++ b/lib/config.cmake.in
 @@ -0,0 +1,7 @@
-+set(GAINPUT_VERSION @FBOW_VERSION@)
++set(GAINPUT_VERSION @GAINPUT_VERSION@)
 +
 +@PACKAGE_INIT@
 +
 +include(${CMAKE_CURRENT_LIST_DIR}/gainputTargets.cmake)
 +
 +check_required_components(gainput)
-\ No newline at end of file
