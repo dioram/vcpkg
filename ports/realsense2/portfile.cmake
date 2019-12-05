@@ -3,12 +3,9 @@ include(vcpkg_common_functions)
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO IntelRealSense/librealsense
-    REF v2.22.0
-    SHA512 7595780c1955a2d4a91df5b70ab6366c672f389bc3d2dcb9f2e78a2ea1fc875c65f878103df483205e17f62dfd024ee5f7ccb15afc5d18978d3c25aa071652ab
+    REF v2.29.0
+    SHA512 b91c3e56d712d72c4c5793e1e3be1a22a09996eefaa6b285a52cd18d5e56ed7ab947592f84febf5877531e69991dfca000a44d66049dd51e98d3575dd466b0c7
     HEAD_REF development
-    PATCHES
-        fix_openni2.patch
-        fix-dependency-glfw3.patch
 )
 
 string(COMPARE EQUAL "${VCPKG_CRT_LINKAGE}" "static" BUILD_CRT_LINKAGE)
@@ -28,12 +25,13 @@ vcpkg_configure_cmake(
     PREFER_NINJA
     OPTIONS
         -DENFORCE_METADATA=ON
-        -DBUILD_WITH_TM2=OFF
+        -DBUILD_WITH_TM2=ON
         -DBUILD_WITH_OPENMP=OFF
         -DBUILD_UNIT_TESTS=OFF
         -DBUILD_WITH_STATIC_CRT=${BUILD_CRT_LINKAGE}
         -DBUILD_OPENNI2_BINDINGS=${BUILD_OPENNI2_BINDINGS}
         -DOPENNI2_DIR=${CURRENT_INSTALLED_DIR}/include/openni2
+        -DUSE_SYSTEM_LIBUSB=OFF
     OPTIONS_RELEASE
         -DBUILD_EXAMPLES=${BUILD_TOOLS}
         -DBUILD_GRAPHICAL_EXAMPLES=${BUILD_TOOLS}
