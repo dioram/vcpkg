@@ -38,9 +38,7 @@ vcpkg_install_cmake()
 
 vcpkg_copy_pdbs()
 
-if(VCPKG_USE_HEAD_VERSION)
-    vcpkg_fixup_cmake_targets(CONFIG_PATH lib/cmake/g2o)
-endif()
+vcpkg_fixup_cmake_targets(CONFIG_PATH lib/cmake/g2o)
 
 if(VCPKG_LIBRARY_LINKAGE STREQUAL dynamic)
     file(GLOB_RECURSE HEADERS "${CURRENT_PACKAGES_DIR}/include/*")
