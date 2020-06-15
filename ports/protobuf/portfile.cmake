@@ -1,13 +1,13 @@
-include(vcpkg_common_functions)
-
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO protocolbuffers/protobuf
-    REF v3.11.0
-    SHA512 c3b4c0da30d886ca2c8bd45e38767e12cf1e603aca13a1f7463ae896c85e5a30fd32e4b2ddeb775f9c04ca0d753cd5946c5808cefbab4982a3fa4433702f771f
+    REF v3.12.0
+    SHA512 2a5448651db557505ad0ad88e681b88c956de7a7b8b029f8685416629d55b09dd35a0d1219311c524b9981067c3685178d89918d4fc2540d30669e9ad0c7c2d0
     HEAD_REF master
     PATCHES
         fix-uwp.patch
+        fix-android-log.patch
+        fix-static-build.patch
 )
 
 if(CMAKE_HOST_WIN32 AND NOT VCPKG_TARGET_ARCHITECTURE MATCHES "x64" AND NOT VCPKG_TARGET_ARCHITECTURE MATCHES "x86")
@@ -34,11 +34,10 @@ else()
   set(VCPKG_BUILD_STATIC_CRT ON)
 endif()
 
-if("zlib" IN_LIST FEATURES)
-    set(protobuf_WITH_ZLIB ON)
-else()
-    set(protobuf_WITH_ZLIB OFF)
-endif()
+vcpkg_check_features(OUT_FEATURE_OPTIONS FEATURE_OPTIONS
+	zlib	protobuf_WITH_ZLIB
+)
+
 
 vcpkg_configure_cmake(
     SOURCE_PATH ${SOURCE_PATH}/cmake
@@ -50,6 +49,7 @@ vcpkg_configure_cmake(
         -Dprotobuf_BUILD_TESTS=OFF
         -DCMAKE_INSTALL_CMAKEDIR:STRING=share/protobuf
         -Dprotobuf_BUILD_PROTOC_BINARIES=${protobuf_BUILD_PROTOC_BINARIES}
+         ${FEATURE_OPTIONS}
 )
 
 vcpkg_install_cmake()
@@ -115,7 +115,7 @@ endif()
 
 if(VCPKG_LIBRARY_LINKAGE STREQUAL "dynamic")
     file(READ ${CURRENT_PACKAGES_DIR}/include/google/protobuf/stubs/platform_macros.h _contents)
-    string(REPLACE "\#endif  // GOOGLE_PROTOBUF_PLATFORM_MACROS_H_" "\#define PROTOBUF_USE_DLLS\n\#endif  // GOOGLE_PROTOBUF_PLATFORM_MACROS_H_" _contents "${_contents}")
+    string(REPLACE "\#endif  // GOOGLE_PROTOBUF_PLATFORM_MACROS_H_" "\#ifndef PROTOBUF_USE_DLLS\n\#define PROTOBUF_USE_DLLS\n\#endif // PROTOBUF_USE_DLLS\n\n\#endif  // GOOGLE_PROTOBUF_PLATFORM_MACROS_H_" _contents "${_contents}")
     file(WRITE ${CURRENT_PACKAGES_DIR}/include/google/protobuf/stubs/platform_macros.h "${_contents}")
 endif()
 
