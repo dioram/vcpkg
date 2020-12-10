@@ -22,7 +22,8 @@ vcpkg_extract_source_archive_ex(
     ARCHIVE ${ARCHIVE}
     PATCHES 
         "added_use_intrin_option.patch"
-	"cmakelists_installation_fix.patch"
+	    "cmakelists_installation_fix.patch"
+        "cmakelists_installation_fix2.patch"
 )
 
 set(CMAKE_SYSTEM_PROCESSOR ${VCPKG_TARGET_ARCHITECTURE})

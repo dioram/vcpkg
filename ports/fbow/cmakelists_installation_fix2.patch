@@ -1,0 +1,40 @@
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index f829a04..a3e3169 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -30,11 +30,13 @@ target_include_directories(${THIS_LIBNAME}
+             $<INSTALL_INTERFACE:include/fbow>
+ )
+ 
++include(GNUInstallDirs)
++
+ install(TARGETS ${THIS_LIBNAME}
+         EXPORT fbow-export
+-        RUNTIME DESTINATION bin
+-        LIBRARY DESTINATION lib
+-        ARCHIVE DESTINATION lib
++        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ )
+ 
+ install(
+@@ -45,7 +47,7 @@ install(
+ )
+ 
+ install(FILES ${hdrs}
+-    DESTINATION include/fbow
++    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/fbow
+ )
+ 
+ set(FBOW_VERSION 1.0.0)
+diff --git a/src/config.cmake.in b/src/config.cmake.in
+index 01bcefb..a66e8a1 100644
+--- a/src/config.cmake.in
++++ b/src/config.cmake.in
+@@ -1,3 +1,5 @@
+ set(FBOW_VERSION @FBOW_VERSION@)
+ 
++find_dependency(OpenCV REQUIRED)
++
+ include(${CMAKE_CURRENT_LIST_DIR}/fbowTargets.cmake)
