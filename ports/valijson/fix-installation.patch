@@ -28,18 +28,18 @@ index 32a9c7a..d233953 100644
 +
 +configure_package_config_file(
 +    valijsonConfig.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/valijsonConfig.cmake
-+    INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}
++    INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/valijson
 +    PATH_VARS CMAKE_INSTALL_INCLUDEDIR
 +)
 +install(FILES ${CMAKE_CURRENT_BINARY_DIR}/valijsonConfig.cmake
-+        DESTINATION ${CMAKE_INSTALL_DATADIR})
++        DESTINATION ${CMAKE_INSTALL_DATADIR}/valijson)
 +install(DIRECTORY include/valijson DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/valijson)
 +install(DIRECTORY include/compat DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/valijson/compat)
 +install(TARGETS valijson EXPORT valijson-export)
 +install(EXPORT valijson-export
 +    FILE valijsonTargets.cmake
 +    NAMESPACE valijson::
-+    DESTINATION ${CMAKE_INSTALL_DATADIR}
++    DESTINATION ${CMAKE_INSTALL_DATADIR}/valijson
 +)
  
  if(NOT valijson_BUILD_TESTS AND NOT valijson_BUILD_EXAMPLES)
