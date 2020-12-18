@@ -33,7 +33,7 @@ index 32a9c7a..d233953 100644
 +)
 +install(FILES ${CMAKE_CURRENT_BINARY_DIR}/valijsonConfig.cmake
 +        DESTINATION ${CMAKE_INSTALL_DATADIR}/valijson)
-+install(DIRECTORY include/valijson DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/valijson)
++install(DIRECTORY include/valijson/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/valijson/)
 +install(DIRECTORY include/compat DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/valijson/compat)
 +install(TARGETS valijson EXPORT valijson-export)
 +install(EXPORT valijson-export
