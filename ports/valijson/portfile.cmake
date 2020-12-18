@@ -10,16 +10,22 @@ vcpkg_from_github(
     PATCHES fix-nlohmann-json.patch
             fix-picojson.patch
             fix-optional.patch
+            fix-installation.patch
 )
 
 # Copy the header files
-file(GLOB HEADER_FILES ${SOURCE_PATH}/include/valijson/*)
-file(COPY ${HEADER_FILES}
-     DESTINATION ${CURRENT_PACKAGES_DIR}/include/valijson
-     REGEX "\.(gitattributes|gitignore)$" EXCLUDE)
+vcpkg_configure_cmake(
+    SOURCE_PATH ${SOURCE_PATH}
+    PREFER_NINJA
+    OPTIONS
+        -Dvalijson_BUILD_EXAMPLES=OFF
+        -Dvalijson_BUILD_TESTS=OFF
+)
 
-file(COPY ${SOURCE_PATH}/include/compat/optional.hpp
-     DESTINATION ${CURRENT_PACKAGES_DIR}/include/valijson/compat)
+vcpkg_install_cmake()
+
+# Remove excess files
+file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug)
 
 # Put the licence file where vcpkg expects it
 file(COPY ${SOURCE_PATH}/LICENSE
