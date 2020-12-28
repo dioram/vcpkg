@@ -28,7 +28,7 @@ vcpkg_extract_source_archive_ex(
 
 set(CMAKE_SYSTEM_PROCESSOR ${VCPKG_TARGET_ARCHITECTURE})
 
-if (${TARGET_TRIPLET} STREQUAL "arm64-jetsontx2")
+if (${TARGET_TRIPLET} STREQUAL "arm64-linux" OR ${TARGET_TRIPLET} STREQUAL "arm-linux")
     set(USE_AVX "-DUSE_AVX=OFF")
     set(USE_SSE3 "-DUSE_SSE3=OFF")
     set(USE_INTRIN "-DUSE_INTRIN=OFF")
