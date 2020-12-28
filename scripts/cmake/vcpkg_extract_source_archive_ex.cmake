@@ -55,12 +55,13 @@ include(vcpkg_apply_patches)
 include(vcpkg_extract_source_archive)
 
 function(vcpkg_extract_source_archive_ex)
+    # parse parameters such that semicolons in options arguments to COMMAND don't get erased
     cmake_parse_arguments(
+        PARSE_ARGV 0
         _vesae
         "NO_REMOVE_ONE_LEVEL;SKIP_PATCH_CHECK"
         "OUT_SOURCE_PATH;ARCHIVE;REF;WORKING_DIRECTORY"
         "PATCHES"
-        ${ARGN}
     )
 
     if(NOT _vesae_ARCHIVE)
@@ -104,7 +105,7 @@ function(vcpkg_extract_source_archive_ex)
     if (NOT _VCPKG_EDITABLE)
         string(APPEND SOURCE_PATH ".clean")
         if(EXISTS ${SOURCE_PATH})
-            message(STATUS "Cleaning sources at ${SOURCE_PATH}. Pass --editable to vcpkg to reuse sources.")
+            message(STATUS "Cleaning sources at ${SOURCE_PATH}. Use --editable to skip cleaning for the packages you specify.")
             file(REMOVE_RECURSE ${SOURCE_PATH})
         endif()
     endif()
