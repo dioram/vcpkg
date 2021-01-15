@@ -57,7 +57,8 @@ namespace vcpkg::Build
     using Dependencies::InstallPlanAction;
     using Dependencies::InstallPlanType;
 
-    void Command::perform_and_exit_ex(const FullPackageSpec& full_spec,
+    void Command::perform_and_exit_ex(const VcpkgCmdArguments& args,
+                                      const FullPackageSpec& full_spec,
                                       const SourceControlFileLocation& scfl,
                                       const PathsPortFileProvider& provider,
                                       IBinaryProvider& binaryprovider,
@@ -65,7 +66,7 @@ namespace vcpkg::Build
                                       const VcpkgPaths& paths)
     {
         Checks::exit_with_code(VCPKG_LINE_INFO,
-                               perform_ex(full_spec, scfl, provider, binaryprovider, build_logs_recorder, paths));
+                               perform_ex(args, full_spec, scfl, provider, binaryprovider, build_logs_recorder, paths));
     }
 
     const CommandStructure COMMAND_STRUCTURE = {
@@ -81,7 +82,8 @@ namespace vcpkg::Build
         Checks::exit_with_code(VCPKG_LINE_INFO, perform(args, paths, default_triplet));
     }
 
-    int Command::perform_ex(const FullPackageSpec& full_spec,
+    int Command::perform_ex(const VcpkgCmdArguments& args,
+                            const FullPackageSpec& full_spec,
                             const SourceControlFileLocation& scfl,
                             const PathsPortFileProvider& provider,
                             IBinaryProvider& binaryprovider,
@@ -134,7 +136,7 @@ namespace vcpkg::Build
         action->build_options.clean_packages = CleanPackages::NO;
 
         const auto build_timer = Chrono::ElapsedTimer::create_started();
-        const auto result = Build::build_package(paths, *action, binaryprovider, build_logs_recorder, status_db);
+        const auto result = Build::build_package(args, paths, *action, binaryprovider, build_logs_recorder, status_db);
         System::print2("Elapsed time for package ", spec, ": ", build_timer, '\n');
 
         if (result.code == BuildResult::CASCADED_DUE_TO_MISSING_DEPENDENCIES)
@@ -182,7 +184,8 @@ namespace vcpkg::Build
         Checks::check_exit(VCPKG_LINE_INFO, scfl != nullptr, "Error: Couldn't find port '%s'", port_name);
         ASSUME(scfl != nullptr);
 
-        return perform_ex(spec,
+        return perform_ex(args,
+                          spec,
                           *scfl,
                           provider,
                           args.binary_caching_enabled() ? *binaryprovider : null_binary_provider(),
@@ -325,7 +328,7 @@ namespace vcpkg::Build
 #if defined(_WIN32)
     const System::Environment& EnvCache::get_action_env(const VcpkgPaths& paths, const AbiInfo& abi_info)
     {
-        std::string build_env_cmd =
+        auto build_env_cmd =
             make_build_env_cmd(*abi_info.pre_build_info, abi_info.toolset.value_or_exit(VCPKG_LINE_INFO));
 
         const auto& base_env = envs.get_lazy(abi_info.pre_build_info->passthrough_env_vars, [&]() -> EnvMapEntry {
@@ -436,9 +439,9 @@ namespace vcpkg::Build
         });
     }
 
-    std::string make_build_env_cmd(const PreBuildInfo& pre_build_info, const Toolset& toolset)
+    System::CmdLineBuilder make_build_env_cmd(const PreBuildInfo& pre_build_info, const Toolset& toolset)
     {
-        if (!pre_build_info.using_vcvars()) return "";
+        if (!pre_build_info.using_vcvars()) return {};
 
         const char* tonull = " >nul";
         if (Debug::g_debugging)
@@ -449,12 +452,13 @@ namespace vcpkg::Build
         const auto arch = to_vcvarsall_toolchain(pre_build_info.target_architecture, toolset);
         const auto target = to_vcvarsall_target(pre_build_info.cmake_system_name);
 
-        return Strings::format(R"(cmd /c ""%s" %s %s %s %s 2>&1 <NUL")",
-                               fs::u8string(toolset.vcvarsall),
-                               Strings::join(" ", toolset.vcvarsall_options),
-                               arch,
-                               target,
-                               tonull);
+        return System::CmdLineBuilder{"cmd"}.string_arg("/c").raw_arg(
+            Strings::format(R"("%s" %s %s %s %s 2>&1 <NUL)",
+                            fs::u8string(toolset.vcvarsall),
+                            Strings::join(" ", toolset.vcvarsall_options),
+                            arch,
+                            target,
+                            tonull));
     }
 
     static std::unique_ptr<BinaryControlFile> create_binary_control_file(
@@ -562,7 +566,7 @@ namespace vcpkg::Build
         CompilerInfo compiler_info;
         System::cmd_execute_and_stream_lines(
             command,
-            [&](const std::string& s) {
+            [&](StringView s) {
                 static const StringLiteral s_hash_marker = "#COMPILER_HASH#";
                 if (Strings::starts_with(s, s_hash_marker))
                 {
@@ -602,7 +606,8 @@ namespace vcpkg::Build
         return compiler_info;
     }
 
-    static std::vector<System::CMakeVariable> get_cmake_build_args(const VcpkgPaths& paths,
+    static std::vector<System::CMakeVariable> get_cmake_build_args(const VcpkgCmdArguments& args,
+                                                                   const VcpkgPaths& paths,
                                                                    const Dependencies::InstallPlanAction& action,
                                                                    Triplet triplet)
     {
@@ -630,6 +635,11 @@ namespace vcpkg::Build
             {"FEATURES", Strings::join(";", action.feature_list)},
             {"ALL_FEATURES", all_features},
         };
+
+        for (auto cmake_arg : args.cmake_args)
+        {
+            variables.push_back(System::CMakeVariable{cmake_arg});
+        }
 
         if (action.build_options.backcompat_features == BackcompatFeatures::PROHIBIT)
         {
@@ -723,7 +733,9 @@ namespace vcpkg::Build
         }
     }
 
-    static ExtendedBuildResult do_build_package(const VcpkgPaths& paths, const Dependencies::InstallPlanAction& action)
+    static ExtendedBuildResult do_build_package(const VcpkgCmdArguments& args,
+                                                const VcpkgPaths& paths,
+                                                const Dependencies::InstallPlanAction& action)
     {
         const auto& pre_build_info = action.pre_build_info(VCPKG_LINE_INFO);
 
@@ -753,7 +765,8 @@ namespace vcpkg::Build
 
         const auto timer = Chrono::ElapsedTimer::create_started();
 
-        auto command = vcpkg::make_cmake_cmd(paths, paths.ports_cmake, get_cmake_build_args(paths, action, triplet));
+        auto command =
+            vcpkg::make_cmake_cmd(paths, paths.ports_cmake, get_cmake_build_args(args, paths, action, triplet));
 
         const auto& env = paths.get_action_env(action.abi_info.value_or_exit(VCPKG_LINE_INFO));
 
@@ -849,10 +862,11 @@ namespace vcpkg::Build
         return {BuildResult::SUCCEEDED, std::move(bcf)};
     }
 
-    static ExtendedBuildResult do_build_package_and_clean_buildtrees(const VcpkgPaths& paths,
+    static ExtendedBuildResult do_build_package_and_clean_buildtrees(const VcpkgCmdArguments& args,
+                                                                     const VcpkgPaths& paths,
                                                                      const Dependencies::InstallPlanAction& action)
     {
-        auto result = do_build_package(paths, action);
+        auto result = do_build_package(args, paths, action);
 
         if (action.build_options.clean_buildtrees == CleanBuildtrees::YES)
         {
@@ -883,11 +897,13 @@ namespace vcpkg::Build
                                       Hash::Algorithm::Sha1));
         }
 
-        for (const auto& env_var : pre_build_info.passthrough_env_vars)
+        for (const auto& env_var : pre_build_info.passthrough_env_vars_tracked)
         {
-            abi_tag_entries.emplace_back(
-                "ENV:" + env_var,
-                Hash::get_string_hash(System::get_environment_variable(env_var).value_or(""), Hash::Algorithm::Sha1));
+            if (auto e = System::get_environment_variable(env_var))
+            {
+                abi_tag_entries.emplace_back(
+                    "ENV:" + env_var, Hash::get_string_hash(e.value_or_exit(VCPKG_LINE_INFO), Hash::Algorithm::Sha1));
+            }
         }
     }
 
@@ -1078,7 +1094,8 @@ namespace vcpkg::Build
         }
     }
 
-    ExtendedBuildResult build_package(const VcpkgPaths& paths,
+    ExtendedBuildResult build_package(const VcpkgCmdArguments& args,
+                                      const VcpkgPaths& paths,
                                       const Dependencies::InstallPlanAction& action,
                                       IBinaryProvider& binaries_provider,
                                       const IBuildLogsRecorder& build_logs_recorder,
@@ -1122,7 +1139,7 @@ namespace vcpkg::Build
         auto& abi_info = action.abi_info.value_or_exit(VCPKG_LINE_INFO);
         if (!abi_info.abi_tag_file)
         {
-            return do_build_package_and_clean_buildtrees(paths, action);
+            return do_build_package_and_clean_buildtrees(args, paths, action);
         }
 
         auto& abi_file = *abi_info.abi_tag_file.get();
@@ -1148,8 +1165,12 @@ namespace vcpkg::Build
                 // missing package, proceed to build.
             }
         }
+        if (action.build_options.build_missing == BuildMissing::NO)
+        {
+            return BuildResult::CACHE_MISSING;
+        }
 
-        ExtendedBuildResult result = do_build_package_and_clean_buildtrees(paths, action);
+        ExtendedBuildResult result = do_build_package_and_clean_buildtrees(args, paths, action);
 
         fs.create_directories(abi_package_dir, ec);
         fs.copy_file(abi_file, abi_file_in_package, fs::copy_options::none, ec);
@@ -1174,6 +1195,7 @@ namespace vcpkg::Build
         static const std::string POST_BUILD_CHECKS_FAILED_STRING = "POST_BUILD_CHECKS_FAILED";
         static const std::string CASCADED_DUE_TO_MISSING_DEPENDENCIES_STRING = "CASCADED_DUE_TO_MISSING_DEPENDENCIES";
         static const std::string EXCLUDED_STRING = "EXCLUDED";
+        static const std::string CACHE_MISSING_STRING = "CACHE_MISSING";
         static const std::string DOWNLOADED_STRING = "DOWNLOADED";
 
         switch (build_result)
@@ -1185,6 +1207,7 @@ namespace vcpkg::Build
             case BuildResult::FILE_CONFLICTS: return FILE_CONFLICTS_STRING;
             case BuildResult::CASCADED_DUE_TO_MISSING_DEPENDENCIES: return CASCADED_DUE_TO_MISSING_DEPENDENCIES_STRING;
             case BuildResult::EXCLUDED: return EXCLUDED_STRING;
+            case BuildResult::CACHE_MISSING: return CACHE_MISSING_STRING;
             case BuildResult::DOWNLOADED: return DOWNLOADED_STRING;
             default: Checks::unreachable(VCPKG_LINE_INFO);
         }
@@ -1291,6 +1314,7 @@ namespace vcpkg::Build
             CHAINLOAD_TOOLCHAIN_FILE,
             BUILD_TYPE,
             ENV_PASSTHROUGH,
+            ENV_PASSTHROUGH_UNTRACKED,
             PUBLIC_ABI_OVERRIDE,
             LOAD_VCVARS_ENV,
         };
@@ -1304,6 +1328,7 @@ namespace vcpkg::Build
             {"VCPKG_CHAINLOAD_TOOLCHAIN_FILE", VcpkgTripletVar::CHAINLOAD_TOOLCHAIN_FILE},
             {"VCPKG_BUILD_TYPE", VcpkgTripletVar::BUILD_TYPE},
             {"VCPKG_ENV_PASSTHROUGH", VcpkgTripletVar::ENV_PASSTHROUGH},
+            {"VCPKG_ENV_PASSTHROUGH_UNTRACKED", VcpkgTripletVar::ENV_PASSTHROUGH_UNTRACKED},
             {"VCPKG_PUBLIC_ABI_OVERRIDE", VcpkgTripletVar::PUBLIC_ABI_OVERRIDE},
             {"VCPKG_LOAD_VCVARS_ENV", VcpkgTripletVar::LOAD_VCVARS_ENV},
         };
@@ -1351,7 +1376,11 @@ namespace vcpkg::Build
                             variable_value);
                     break;
                 case VcpkgTripletVar::ENV_PASSTHROUGH:
-                    passthrough_env_vars = Strings::split(variable_value, ';');
+                    passthrough_env_vars_tracked = Strings::split(variable_value, ';');
+                    Util::Vectors::append(&passthrough_env_vars, passthrough_env_vars_tracked);
+                    break;
+                case VcpkgTripletVar::ENV_PASSTHROUGH_UNTRACKED:
+                    Util::Vectors::append(&passthrough_env_vars, Strings::split(variable_value, ';'));
                     break;
                 case VcpkgTripletVar::PUBLIC_ABI_OVERRIDE:
                     public_abi_override = variable_value.empty() ? nullopt : Optional<std::string>{variable_value};
