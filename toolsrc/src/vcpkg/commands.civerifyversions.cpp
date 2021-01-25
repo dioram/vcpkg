@@ -367,15 +367,19 @@ namespace vcpkg::Commands::CIVerifyVersions
                 continue;
             }
 
-            auto versions_file_path =
-                paths.builtin_port_versions / Strings::concat(port_name[0], '-') / Strings::concat(port_name, ".json");
+            auto versions_file_path = paths.builtin_registry_versions / fs::u8path({port_name[0], '-'}) /
+                                      fs::u8path(Strings::concat(port_name, ".json"));
             if (!fs.exists(versions_file_path))
             {
                 System::printf(System::Color::error, "FAIL: %s\n", port_name);
                 errors.emplace(Strings::format("Error: While validating port %s.\n"
-                                               "       Missing expected versions file at: %s",
+                                               "       Missing expected versions file at: %s\n"
+                                               "       Run:\n\n"
+                                               "           vcpkg x-add-version %s\n\n"
+                                               "       to create the versions file.",
                                                port_name,
-                                               fs::u8string(versions_file_path)));
+                                               fs::u8string(versions_file_path),
+                                               port_name));
                 continue;
             }
 
@@ -400,7 +404,7 @@ namespace vcpkg::Commands::CIVerifyVersions
                 System::printf(System::Color::error, "%s\n", error);
             }
             System::print2(System::Color::error,
-                           "\nTo attempt to resolve all erros at once, run:\n\n"
+                           "\nTo attempt to resolve all errors at once, run:\n\n"
                            "    vcpkg x-add-version --all\n\n");
             Checks::exit_fail(VCPKG_LINE_INFO);
         }
