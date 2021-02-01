@@ -2,6 +2,7 @@
 #include <vcpkg/base/downloads.h>
 #include <vcpkg/base/files.h>
 #include <vcpkg/base/parse.h>
+#include <vcpkg/base/strings.h>
 #include <vcpkg/base/system.debug.h>
 #include <vcpkg/base/system.print.h>
 #include <vcpkg/base/system.process.h>
@@ -59,7 +60,7 @@ namespace
                                                         const fs::path& dst,
                                                         const fs::path& archive_path)
     {
-        System::CmdLineBuilder cmd;
+        System::Command cmd;
 #if defined(_WIN32)
         auto&& seven_zip_exe = paths.get_tool_exe(Tools::SEVEN_ZIP);
         cmd.path_arg(seven_zip_exe)
@@ -96,13 +97,11 @@ namespace
 #if defined(_WIN32)
         auto&& seven_zip_exe = paths.get_tool_exe(Tools::SEVEN_ZIP);
 
-        System::cmd_execute_and_capture_output(System::CmdLineBuilder{seven_zip_exe}
-                                                   .string_arg("a")
-                                                   .path_arg(destination)
-                                                   .path_arg(source / fs::u8path("*")),
-                                               System::get_clean_environment());
+        System::cmd_execute_and_capture_output(
+            System::Command{seven_zip_exe}.string_arg("a").path_arg(destination).path_arg(source / fs::u8path("*")),
+            System::get_clean_environment());
 #else
-        System::cmd_execute_clean(System::CmdLineBuilder{"zip"}
+        System::cmd_execute_clean(System::Command{"zip"}
                                       .string_arg("--quiet")
                                       .string_arg("-y")
                                       .string_arg("-r")
@@ -417,10 +416,14 @@ namespace
             , m_read_configs(std::move(read_configs))
             , m_write_configs(std::move(write_configs))
             , m_interactive(interactive)
+            , m_use_nuget_cache(false)
         {
+            const std::string use_nuget_cache = System::get_environment_variable("VCPKG_USE_NUGET_CACHE").value_or("");
+            m_use_nuget_cache = Strings::case_insensitive_ascii_equals(use_nuget_cache, "true") ||
+                                Strings::case_insensitive_ascii_equals(use_nuget_cache, "1");
         }
 
-        int run_nuget_commandline(const System::CmdLineBuilder& cmdline)
+        int run_nuget_commandline(const System::Command& cmdline)
         {
             if (m_interactive)
             {
@@ -516,12 +519,12 @@ namespace
             };
 
             const auto& nuget_exe = paths.get_tool_exe("nuget");
-            std::vector<System::CmdLineBuilder> cmdlines;
+            std::vector<System::Command> cmdlines;
 
             if (!m_read_sources.empty())
             {
                 // First check using all sources
-                System::CmdLineBuilder cmdline;
+                System::Command cmdline;
 #ifndef _WIN32
                 cmdline.path_arg(paths.get_tool_exe(Tools::MONO));
 #endif
@@ -533,9 +536,7 @@ namespace
                     .string_arg("-Source")
                     .string_arg(Strings::join(";", m_read_sources))
                     .string_arg("-ExcludeVersion")
-                    .string_arg("-NoCache")
                     .string_arg("-PreRelease")
-                    .string_arg("-DirectDownload")
                     .string_arg("-PackageSaveMode")
                     .string_arg("nupkg")
                     .string_arg("-Verbosity")
@@ -545,13 +546,17 @@ namespace
                 {
                     cmdline.string_arg("-NonInteractive");
                 }
+                if (!m_use_nuget_cache)
+                {
+                    cmdline.string_arg("-DirectDownload").string_arg("-NoCache");
+                }
 
                 cmdlines.push_back(std::move(cmdline));
             }
             for (auto&& cfg : m_read_configs)
             {
                 // Then check using each config
-                System::CmdLineBuilder cmdline;
+                System::Command cmdline;
 #ifndef _WIN32
                 cmdline.path_arg(paths.get_tool_exe(Tools::MONO));
 #endif
@@ -563,9 +568,7 @@ namespace
                     .string_arg("-ConfigFile")
                     .path_arg(cfg)
                     .string_arg("-ExcludeVersion")
-                    .string_arg("-NoCache")
                     .string_arg("-PreRelease")
-                    .string_arg("-DirectDownload")
                     .string_arg("-PackageSaveMode")
                     .string_arg("nupkg")
                     .string_arg("-Verbosity")
@@ -574,6 +577,10 @@ namespace
                 if (!m_interactive)
                 {
                     cmdline.string_arg("-NonInteractive");
+                }
+                if (!m_use_nuget_cache)
+                {
+                    cmdline.string_arg("-DirectDownload").string_arg("-NoCache");
                 }
 
                 cmdlines.push_back(std::move(cmdline));
@@ -642,7 +649,7 @@ namespace
                 nuspec_path, generate_nuspec(paths, action, nuget_ref), VCPKG_LINE_INFO);
 
             const auto& nuget_exe = paths.get_tool_exe("nuget");
-            System::CmdLineBuilder cmdline;
+            System::Command cmdline;
 #ifndef _WIN32
             cmdline.path_arg(paths.get_tool_exe(Tools::MONO));
 #endif
@@ -666,7 +673,7 @@ namespace
                 auto nupkg_path = paths.buildtrees / nuget_ref.nupkg_filename();
                 for (auto&& write_src : m_write_sources)
                 {
-                    System::CmdLineBuilder cmd;
+                    System::Command cmd;
 #ifndef _WIN32
                     cmd.path_arg(paths.get_tool_exe(Tools::MONO));
 #endif
@@ -695,7 +702,7 @@ namespace
                 }
                 for (auto&& write_cfg : m_write_configs)
                 {
-                    System::CmdLineBuilder cmd;
+                    System::Command cmd;
 #ifndef _WIN32
                     cmd.path_arg(paths.get_tool_exe(Tools::MONO));
 #endif
@@ -737,6 +744,7 @@ namespace
 
         std::set<PackageSpec> m_restored;
         bool m_interactive;
+        bool m_use_nuget_cache;
     };
 }
 
@@ -1430,6 +1438,9 @@ void vcpkg::help_topic_binary_caching(const VcpkgPaths&)
              "                commit=\"${GITHUB_SHA}\"/>\n"
              "\n"
              "if the appropriate environment variables are defined and non-empty.\n");
+    tbl.blank();
+    tbl.text("NuGet's cache is not used by default. To use it for every nuget-based source, set the environment "
+             "variable `VCPKG_USE_NUGET_CACHE` to `true` (case-insensitive) or `1`.\n");
     tbl.blank();
     System::print2(tbl.m_str);
     const auto& maybe_cachepath = default_cache_path();
