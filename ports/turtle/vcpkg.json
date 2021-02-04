@@ -1,0 +1,9 @@
+{
+  "name": "turtle",
+  "version-string": "1.3.2",
+  "homepage": "https://github.com/mat007/turtle",
+  "description": "Turtle is a C++ mock object library based on Boost with a focus on usability, simplicity and flexibility.",
+  "dependencies": [ "boost" ],
+
+  "default-features": []
+}
