@@ -1,0 +1,8 @@
+{
+  "name": "g2o",
+  "version-string": "20201223",
+  "homepage": "https://github.com/RainerKuemmerle/g2o",
+  "description": "g2o is an open-source C++ framework for optimizing graph-based nonlinear error functions",
+  "dependencies": ["suitesparse", "eigen3", "lapack", "ceres"]
+}
+
