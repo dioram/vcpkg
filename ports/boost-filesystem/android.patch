@@ -1,0 +1,59 @@
+diff --git a/src/operations.cpp b/src/operations.cpp
+index fc853fb..0397fe6 100644
+--- a/src/operations.cpp
++++ b/src/operations.cpp
+@@ -1202,25 +1202,33 @@ bool copy_file(const path& from, const path& to, unsigned int options, error_cod
+     break;
+   }
+ 
++  mode_t from_mode;
+ #if defined(BOOST_FILESYSTEM_HAS_STATX) || defined(BOOST_FILESYSTEM_HAS_STATX_SYSCALL)
+   unsigned int statx_data_mask = STATX_TYPE | STATX_MODE | STATX_INO | STATX_SIZE;
+   if ((options & static_cast< unsigned int >(copy_options::update_existing)) != 0u)
+     statx_data_mask |= STATX_MTIME;
+ 
++{
+   struct ::statx from_stat;
+   if (BOOST_UNLIKELY(statx(infile.fd, "", AT_EMPTY_PATH | AT_NO_AUTOMOUNT, statx_data_mask, &from_stat) < 0))
+   {
+-  fail_errno:
+-    err = errno;
+-    goto fail;
++    if (errno == ENOSYS)
++    {
++      goto fallback:
++    }
++    goto fail_errno;
+   }
+ 
+-  if (BOOST_UNLIKELY((from_stat.stx_mask & statx_data_mask) != statx_data_mask))
++  if (BOOST_LIKELY((from_stat.stx_mask & statx_data_mask) == statx_data_mask))
+   {
+-    err = ENOSYS;
+-    goto fail;
++    from_mode = get_mode(from_stat);
++    goto have_mode;
+   }
+-#else
++}
++
++fallback:
++#endif
++{
+   struct ::stat from_stat;
+   if (BOOST_UNLIKELY(::fstat(infile.fd, &from_stat) != 0))
+   {
+@@ -1228,9 +1236,11 @@ bool copy_file(const path& from, const path& to, unsigned int options, error_cod
+     err = errno;
+     goto fail;
+   }
+-#endif
+ 
+-  const mode_t from_mode = get_mode(from_stat);
++  from_mode = get_mode(from_stat);
++}
++
++have_mode:
+   if (BOOST_UNLIKELY(!S_ISREG(from_mode)))
+   {
+     err = ENOSYS;

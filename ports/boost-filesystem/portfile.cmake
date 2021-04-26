@@ -6,6 +6,7 @@ vcpkg_from_github(
     REF boost-1.75.0
     SHA512 e79008f39568eaa4763110e4c172b022220b0667d7f05c606daed92f6f5c3977f2478063b6b16db6517b3e33b2df8ec13f8f0ae134fb2020a93d64895170b08d
     HEAD_REF master
+    PATCHES android.patch
 )
 
 include(${CURRENT_INSTALLED_DIR}/share/boost-build/boost-modular-build.cmake)
