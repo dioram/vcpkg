@@ -75,7 +75,7 @@ set(ENV{TF_DOWNLOAD_CLANG} 0)
 set(ENV{TF_NCCL_VERSION} ${TF_VERSION_SHORT})
 set(ENV{NCCL_INSTALL_PATH} "")
 set(ENV{CC_OPT_FLAGS} "/arch:AVX")
-set(ENV{TF_NEED_CUDA} 0)
+set(ENV{TF_NEED_CUDA} 1)
 set(ENV{TF_CONFIGURE_IOS} 0)
 
 if(VCPKG_TARGET_IS_WINDOWS)
@@ -181,7 +181,7 @@ foreach(BUILD_TYPE dbg rel)
 	endif()
 	if(BUILD_TYPE STREQUAL dbg)
 		if(VCPKG_TARGET_IS_WINDOWS)
-			set(BUILD_OPTS "--compilation_mode=dbg --features=fastbuild") # link with /DEBUG:FASTLINK instead of /DEBUG:FULL to avoid .pdb >4GB error
+			set(BUILD_OPTS "-c opt") # link with /DEBUG:FASTLINK instead of /DEBUG:FULL to avoid .pdb >4GB error
 		else()
 			set(BUILD_OPTS "--compilation_mode=dbg")
 		endif()
